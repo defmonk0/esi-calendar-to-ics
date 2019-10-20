@@ -9,8 +9,8 @@ if (!isset($_GET['refresh_token']) || !isset($_GET['character_id'])) {
 
 // ======================================== GET CALENDAR FROM API
 
-$client_id = "XXX";
-$secret_key = "XXX";
+$client_id = $_SERVER['client_id'];
+$secret_key = $_SERVER['secret_key'];
 
 $refresh_token = $_GET['refresh_token'];
 $character_id = $_GET['character_id'];
