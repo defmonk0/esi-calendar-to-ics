@@ -45,4 +45,5 @@ GitHub.sublime-settings
 
 /cache/
 /logs/
-/index.zip
+/esi-calendar-to-ics/
+/*.zip
