@@ -3,7 +3,7 @@ include "vendor/autoload.php";
 
 // ======================================== MAKE SURE WE HAVE OUR INPUTS
 
-if(!isset($_GET['refresh_token']) || !isset($_GET['character_id'])) {
+if (!isset($_GET['refresh_token']) || !isset($_GET['character_id'])) {
 	return;
 }
 
@@ -22,14 +22,34 @@ $authentication = new Seat\Eseye\Containers\EsiAuthentication([
 ]);
 
 $esi = new Seat\Eseye\Eseye($authentication);
+$from = 1953000;
+$count = 1;
+$events = [];
 
-$esi->setQueryString([
-	"from_event" => 1953000,
-]);
+while ($count > 0) {
+	$count = 0;
 
-$calendar = $esi->invoke("get", "/characters/{character_id}/calendar/", [
-	"character_id" => $character_id,
-]);
+	$result = $esi
+		->setQueryString([
+			"from_event" => $from,
+		])
+		->invoke("get", "/characters/{character_id}/calendar/", [
+			"character_id" => $character_id,
+		]);
+
+	foreach ($result as $v) {
+		$events[] = $v;
+		$count++;
+	}
+
+	usort($events, function ($a, $b) {
+		return $a->event_id - $b->event_id;
+	});
+
+	$from = end($events)->event_id;
+}
+
+return;
 
 // ======================================== SET UP ICS FILE
 
@@ -40,7 +60,7 @@ $vcalendar = new Eluceo\iCal\Component\Calendar(
 // ======================================== FILL ICS FILE
 
 $count = 0;
-foreach ($calendar as $event) {
+foreach ($events as $event) {
 	$vevent = new Eluceo\iCal\Component\Event();
 	$start = new DateTime($event->event_date);
 	$vevent
@@ -75,6 +95,5 @@ foreach ($calendar as $event) {
 header('Content-Type: text/calendar; charset=utf-8');
 header('Content-Disposition: attachment; filename="cal.ics"');
 echo $vcalendar->render();
-
 
 ?>
