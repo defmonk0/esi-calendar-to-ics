@@ -13,8 +13,9 @@ vendor: $(COMPOSER) $(COMPOSER_CONF)
 	$(COMPOSER) install --no-interaction --optimize-autoloader --prefer-dist
 
 deploy:
+	rm deploy.zip
 	mkdir -p esi-calendar-to-ics
 	cp index.php esi-calendar-to-ics/index.php
-	cp composer.json esi-calendar-to-ics/composer.json
+	cp -r vendor esi-calendar-to-ics/vendor
 	zip -r deploy.zip esi-calendar-to-ics
 	rm -rf esi-calendar-to-ics
