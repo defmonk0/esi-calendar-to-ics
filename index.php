@@ -55,6 +55,12 @@ try {
 		$from = end($events)->event_id;
 	}
 
+	usort($events, function ($a, $b) {
+		$sa = new DateTime($a->event_date);
+		$sb = new DateTime($b->event_date);
+		return $sa->getTimestamp() - $sb->getTimestamp();
+	});
+
 	// ======================================== SET UP ICS FILE
 
 	$vcalendar = new Eluceo\iCal\Component\Calendar(
@@ -63,7 +69,6 @@ try {
 
 	// ======================================== FILL ICS FILE
 
-	$count = 0;
 	foreach ($events as $event) {
 		$vevent = new Eluceo\iCal\Component\Event();
 		$start = new DateTime($event->event_date);
@@ -73,7 +78,7 @@ try {
 			->setSummary($event->title)
 			->setUniqueId($event->event_id);
 
-		if ($count < 10) {
+		if ($start->getTimestamp() > time() - 86400) {
 			$event = $esi->invoke(
 				"get",
 				"/characters/{character_id}/calendar/{event_id}/",
