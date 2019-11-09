@@ -69,7 +69,15 @@ try {
 
 	// ======================================== FILL ICS FILE
 
+	$filled = [];
+
 	foreach ($events as $event) {
+		if (isset($filled[$event->event_id]) && $filled[$event->event_id]) {
+			continue;
+		} else {
+			$filled[$event->event_id] = true;
+		}
+
 		$vevent = new Eluceo\iCal\Component\Event();
 		$start = new DateTime($event->event_date);
 		$vevent

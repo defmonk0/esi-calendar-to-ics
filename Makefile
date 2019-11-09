@@ -19,3 +19,8 @@ deploy:
 	cp -r vendor esi-calendar-to-ics/vendor
 	zip -r deploy.zip esi-calendar-to-ics
 	rm -rf esi-calendar-to-ics
+
+test:
+	clear
+	clear
+	php index.php
