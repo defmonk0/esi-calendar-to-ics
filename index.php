@@ -1,19 +1,19 @@
 <?php
 
-require_once "vendor/autoload.php";
+require_once "./vendor/autoload.php";
 
-require_once "ESICalendar.php";
-require_once "ICSGenerator.php";
+require_once "./ESICalendar.php";
+require_once "./ICSGenerator.php";
 
 try {
 	// ======================================== MAKE SURE WE HAVE OUR INPUTS
 
 	if (!isset($_GET['refresh_token']) || !isset($_GET['character_id'])) {
-		return;
+		throw new \Exception("Missing refresh token or character ID.");
 	}
 
 	if (!isset($_SERVER['client_id']) || !isset($_SERVER['secret_key'])) {
-		return;
+		throw new \Exception("Missing client ID or secret key.");
 	}
 
 	$client_id = $_SERVER['client_id'];
@@ -31,7 +31,7 @@ try {
 		$character_id
 	);
 
-	$events = $esical->getEvents(195300000);
+	$events = $esical->getEvents(1953000);
 
 	if (!count($events)) {
 		throw new \Exception("No events found.");
