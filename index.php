@@ -1,8 +1,11 @@
 <?php
 
-try {
-	include "vendor/autoload.php";
+require_once "vendor/autoload.php";
 
+require_once "ESICalendar.php";
+require_once "ICSGenerator.php";
+
+try {
 	// ======================================== MAKE SURE WE HAVE OUR INPUTS
 
 	if (!isset($_GET['refresh_token']) || !isset($_GET['character_id'])) {
@@ -13,107 +16,46 @@ try {
 		return;
 	}
 
-	// ======================================== GET CALENDAR FROM API
-
 	$client_id = $_SERVER['client_id'];
 	$secret_key = $_SERVER['secret_key'];
 
 	$refresh_token = $_GET['refresh_token'];
 	$character_id = $_GET['character_id'];
 
-	$authentication = new Seat\Eseye\Containers\EsiAuthentication([
-		"client_id" => $client_id,
-		"secret" => $secret_key,
-		"refresh_token" => $refresh_token,
-	]);
+	// ======================================== GET CALENDAR FROM API
 
-	$esi = new Seat\Eseye\Eseye($authentication);
-	$from = 1953000;
-	$count = 1;
-	$events = [];
-
-	while ($count > 0) {
-		$count = 0;
-
-		$result = $esi
-			->setQueryString([
-				"from_event" => $from,
-			])
-			->invoke("get", "/characters/{character_id}/calendar/", [
-				"character_id" => $character_id,
-			]);
-
-		foreach ($result as $v) {
-			$events[] = $v;
-			$count++;
-		}
-
-		usort($events, function ($a, $b) {
-			return $a->event_id - $b->event_id;
-		});
-
-		$from = end($events)->event_id;
-	}
-
-	usort($events, function ($a, $b) {
-		$sa = new DateTime($a->event_date);
-		$sb = new DateTime($b->event_date);
-		return $sa->getTimestamp() - $sb->getTimestamp();
-	});
-
-	// ======================================== SET UP ICS FILE
-
-	$vcalendar = new Eluceo\iCal\Component\Calendar(
-		"ESI Calendar For " . $character_id
+	$esical = new \ESICalendar(
+		$client_id,
+		$secret_key,
+		$refresh_token,
+		$character_id
 	);
 
-	// ======================================== FILL ICS FILE
+	$events = $esical->getEvents(195300000);
 
-	$filled = [];
-
-	foreach ($events as $event) {
-		if (isset($filled[$event->event_id]) && $filled[$event->event_id]) {
-			continue;
-		} else {
-			$filled[$event->event_id] = true;
-		}
-
-		$vevent = new Eluceo\iCal\Component\Event();
-		$start = new DateTime($event->event_date);
-		$vevent
-			->setDescription($event->title)
-			->setDtStart($start)
-			->setSummary($event->title)
-			->setUniqueId($event->event_id);
-
-		if ($start->getTimestamp() > time() - 86400) {
-			$event = $esi->invoke(
-				"get",
-				"/characters/{character_id}/calendar/{event_id}/",
-				[
-					"character_id" => $character_id,
-					"event_id" => $event->event_id,
-				]
-			);
-
-			$vevent
-				->setDescription($event->text)
-				->setDuration(new DateInterval("PT" . $event->duration . "M"))
-				->setOrganizer(
-					new Eluceo\iCal\Property\Event\Organizer($event->owner_name)
-				);
-		}
-
-		$vcalendar->addComponent($vevent);
+	if (!count($events)) {
+		throw new \Exception("No events found.");
 	}
 
-	// ======================================== OUTPUT ICS FILE
+	// ======================================== GENERATE ICS FILE
+
+	$ics = new \ICSGenerator("ESI Calendar For " . $character_id);
+	$ics->fillWithESIEvents($esical, $events);
 
 	header('Content-Type: text/calendar; charset=utf-8');
 	header('Content-Disposition: attachment; filename="cal.ics"');
-	echo $vcalendar->render();
-} catch (Exception $e) {
-	echo $e->getMessage();
+	echo $ics->calendar->render();
+} catch (\Seat\Eseye\Exceptions\RequestFailedException $e) {
+	echo "[ERROR] " . $e->getCode() . "\n";
+	echo "[ERROR] " . $e->getMessage() . "\n";
+
+	echo "[ERROR] " . $e->getEsiResponse()->getErrorCode() . "\n";
+	echo "[ERROR] " . $e->getEsiResponse()->error() . "\n";
+
+	print_r($e);
+} catch (\Exception $e) {
+	echo "[ERROR] " . $e->getMessage() . "\n";
+	print_r($e);
 }
 
 ?>
