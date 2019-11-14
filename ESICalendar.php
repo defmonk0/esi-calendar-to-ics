@@ -38,6 +38,10 @@ class ESICalendar {
 					"character_id" => $this->char_id,
 				]);
 
+			if($result->getErrorCode() !== 200) {
+				return [];
+			}
+
 			foreach ($result as $v) {
 				$events[$v->event_id] = $v;
 				$count++;
