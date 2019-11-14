@@ -38,7 +38,7 @@ class ESICalendar {
 					"character_id" => $this->char_id,
 				]);
 
-			if($result->getErrorCode() !== 200) {
+			if ($result->getErrorCode() !== 200) {
 				return [];
 			}
 
